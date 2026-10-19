@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddSessionKeyDialog } from './AddSessionKeyDialog';
+import { RevokeConfirmModal } from './RevokeConfirmModal';
 import { useSessionKeys } from '../../hooks/useSessionKeys';
 import { SessionKeyRow } from '../../features/session-keys';
 import { ArrowLeft, KeyRound, Plus, X } from 'lucide-react';
@@ -17,6 +18,13 @@ export const SessionKeysScreen: React.FC = () => {
     clearError,
   } = useSessionKeys();
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isRevokeAllOpen, setRevokeAllOpen] = useState(false);
+  const revocableKeys = sessionKeys.filter((key) => key.expiresAt !== 0);
+
+  const handleRevokeAll = async (): Promise<void> => {
+    setRevokeAllOpen(false);
+    await Promise.all(revocableKeys.map((key) => revokeSessionKey(key.publicKey)));
+  };
 
   return (
     <div className="wallet-sheet p-5">
@@ -108,6 +116,23 @@ export const SessionKeysScreen: React.FC = () => {
           Add session key
         </button>
       )}
+
+      {revocableKeys.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setRevokeAllOpen(true)}
+          className="wallet-pill-btn-secondary mt-3 h-11 text-sm text-red-500"
+        >
+          Revoke all
+        </button>
+      )}
+
+      <RevokeConfirmModal
+        open={isRevokeAllOpen}
+        count={revocableKeys.length}
+        onConfirm={() => void handleRevokeAll()}
+        onCancel={() => setRevokeAllOpen(false)}
+      />
 
       <AddSessionKeyDialog
         open={isDialogOpen}
